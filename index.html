@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reservas de Aulas Web</title>
+  <!-- Tailwind CSS para un diseño limpio, moderno y responsive -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome para iconografía visual -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Estilos personalizados para animaciones suaves */
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.25s ease-in-out;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans antialiased">
+
+  <!-- Header & Navigation Banner -->
+  <header class="bg-brand-600 text-white shadow-md sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="bg-white/20 p-2 rounded-lg">
+          <i class="fa-solid fa-graduation-cap text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight">Reservas de Aulas Web</h1>
+          <p class="text-xs text-brand-100">Gestión de espacios académicos y laboratorios</p>
+        </div>
+      </div>
+      
+      <!-- Tab Controls -->
+      <nav class="flex bg-brand-700/60 p-1.5 rounded-xl gap-1 w-full sm:w-auto">
+        <button id="tab-btn-nueva" onclick="switchTab('nueva')" class="tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all duration-200 bg-white text-brand-700 shadow-sm">
+          <i class="fa-solid fa-calendar-plus"></i>
+          Nueva reserva
+        </button>
+        <button id="tab-btn-mis" onclick="switchTab('mis')" class="tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all duration-200 text-white hover:bg-white/10">
+          <i class="fa-solid fa-bookmark"></i>
+          Mis reservas
+          <span id="badge-count" class="bg-brand-500 text-white text-xs px-2 py-0.5 rounded-full font-bold ml-1">0</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Notification Toast Container -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full px-4"></div>
+
+  <!-- Main Container -->
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 py-8 flex-grow w-full">
+
+    <!-- Vista 1: Nueva Reserva -->
+    <section id="view-nueva" class="tab-content active">
+      <div class="mb-6">
+        <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Nueva reserva</h2>
+        <p class="text-slate-500 text-sm mt-1">Elige un espacio y un intervalo de tiempo. Todos los campos son obligatorios.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        <!-- Form Context -->
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+          <form id="reservation-form" onsubmit="handleReservationSubmit(event)" class="space-y-6">
+            
+            <!-- Aula Select -->
+            <div>
+              <label for="aula" class="block text-sm font-semibold text-slate-700 mb-2">
+                <i class="fa-solid fa-door-open text-brand-600 mr-1.5"></i>Aula o Espacio
+              </label>
+              <select id="aula" required class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-white text-slate-800 font-medium transition duration-150">
+                <option value="" disabled selected>Selecciona un Aula</option>
+                <option value="Aula 101 - General">Aula 101 - Edificio Principal (Cap. 40)</option>
+                <option value="Aula 102 - Audiovisuales">Aula 102 - Audiovisuales y Proyecciones</option>
+                <option value="Aula 103 - Sistemas">Aula 103 - Laboratorio de Cómputo</option>
+                <option value="Aula 201 - Posgrados">Aula 201 - Sala de Posgrados</option>
+                <option value="Auditorio Central">Auditorio Central (Cap. 120)</option>
+              </select>
+            </div>
+
+            <!-- Date Input -->
+            <div>
+              <label for="fecha" class="block text-sm font-semibold text-slate-700 mb-2">
+                <i class="fa-regular fa-calendar text-brand-600 mr-1.5"></i>Fecha de Reserva
+              </label>
+              <input type="date" id="fecha" required class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-800 font-medium transition duration-150">
+            </div>
+
+            <!-- Time Inputs -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="hora-inicio" class="block text-sm font-semibold text-slate-700 mb-2">
+                  <i class="fa-regular fa-clock text-brand-600 mr-1.5"></i>Hora Inicio
+                </label>
+                <input type="time" id="hora-inicio" required class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-800 font-medium transition duration-150">
+              </div>
+              <div>
+                <label for="hora-fin" class="block text-sm font-semibold text-slate-700 mb-2">
+                  <i class="fa-solid fa-clock text-brand-600 mr-1.5"></i>Hora Fin
+                </label>
+                <input type="time" id="hora-fin" required class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-800 font-medium transition duration-150">
+              </div>
+            </div>
+
+            <!-- User Name / Subject (Extra polish field) -->
+            <div>
+              <label for="profesor" class="block text-sm font-semibold text-slate-700 mb-2">
+                <i class="fa-solid fa-user-graduate text-brand-600 mr-1.5"></i>Solicitante / Asignatura
+              </label>
+              <input type="text" id="profesor" placeholder="Ej: Prof. María García - Cálculo II" required class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-800 font-medium transition duration-150">
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-brand-500/25 transition duration-200 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-paper-plane"></i>
+              Reservar Aula
+            </button>
+          </form>
+        </div>
+
+        <!-- Callout Side Card -->
+        <aside class="bg-gradient-to-br from-brand-50 to-indigo-50 border border-brand-200 rounded-2xl p-6 shadow-sm">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="bg-brand-600 text-white p-2 rounded-lg">
+              <i class="fa-solid fa-circle-info text-lg"></i>
+            </div>
+            <h3 class="font-bold text-lg text-brand-900">Reglas de horario</h3>
+          </div>
+          <ul class="space-y-3.5 text-sm text-brand-900">
+            <li class="flex items-start gap-2.5">
+              <i class="fa-solid fa-check text-brand-600 mt-1"></i>
+              <span><strong>Anticipación:</strong> Reserva con suficiente antelación para asegurar disponibilidad.</span>
+            </li>
+            <li class="flex items-start gap-2.5">
+              <i class="fa-solid fa-check text-brand-600 mt-1"></i>
+              <span><strong>Duración recomendada:</strong> Un máximo de 2 a 4 horas por clase o evento.</span>
+            </li>
+            <li class="flex items-start gap-2.5">
+              <i class="fa-solid fa-check text-brand-600 mt-1"></i>
+              <span><strong>Sin empalmes:</strong> El sistema previene automáticamente la reserva de un aula duplicada en la misma fecha y rango horario.</span>
+            </li>
+            <li class="flex items-start gap-2.5">
+              <i class="fa-solid fa-check text-brand-600 mt-1"></i>
+              <span><strong>Cancelaciones:</strong> Si no utilizas el espacio, por favor elimina tu reserva desde la pestaña "Mis reservas".</span>
+            </li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Vista 2: Mis Reservas -->
+    <section id="view-mis" class="tab-content">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Mis reservas guardadas</h2>
+          <p class="text-slate-500 text-sm mt-1">Consulta y gestiona las aulas que has reservado activamente.</p>
+        </div>
+        <button onclick="clearAllReservations()" class="text-xs text-rose-600 hover:text-rose-800 font-semibold flex items-center gap-1 self-start sm:self-auto bg-rose-50 hover:bg-rose-100 px-3 py-2 rounded-lg transition duration-150">
+          <i class="fa-solid fa-trash-can"></i>
+          Borrar todas las reservas
+        </button>
+      </div>
+
+      <!-- Empty State Container -->
+      <div id="empty-state" class="hidden bg-white border border-dashed border-slate-300 rounded-2xl p-12 text-center max-w-md mx-auto my-8">
+        <div class="w-16 h-16 bg-brand-50 text-brand-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+          <i class="fa-regular fa-calendar-xmark"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-800 mb-1">No tienes reservas activas</h3>
+        <p class="text-slate-500 text-sm mb-6">Aún no has apartado ningún espacio académico.</p>
+        <button onclick="switchTab('nueva')" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl shadow transition duration-150 inline-flex items-center gap-2">
+          <i class="fa-solid fa-plus"></i>
+          Crear una reserva ahora
+        </button>
+      </div>
+
+      <!-- Reservations List -->
+      <div id="reservations-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+    <div class="max-w-6xl mx-auto px-4 text-center text-xs text-slate-500">
+      Sistema de Reservas de Aulas &copy; 2026 — Gestor Institucional de Espacios
+    </div>
+  </footer>
+
+  <!-- App Logic (JavaScript) -->
+  <script>
+    // Key for local storage
+    const STORAGE_KEY = 'aulas_reservas_data';
+
+    // Application State
+    let reservations = [];
+
+    // Initialize application on load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadReservations();
+      setupMinDate();
+      renderReservations();
+    });
+
+    // Prevent selecting past dates in date input
+    function setupMinDate() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('fecha').min = today;
+    }
+
+    // Switch active view/tab
+    function switchTab(tabName) {
+      const btnNueva = document.getElementById('tab-btn-nueva');
+      const btnMis = document.getElementById('tab-btn-mis');
+      const viewNueva = document.getElementById('view-nueva');
+      const viewMis = document.getElementById('view-mis');
+
+      if (tabName === 'nueva') {
+        btnNueva.className = 'tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all duration-200 bg-white text-brand-700 shadow-sm';
+        btnMis.className = 'tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all duration-200 text-white hover:bg-white/10';
+        
+        viewNueva.classList.add('active');
+        viewMis.classList.remove('active');
+      } else {
+        btnMis.className = 'tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all duration-200 bg-white text-brand-700 shadow-sm';
+        btnNueva.className = 'tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all duration-200 text-white hover:bg-white/10';
+        
+        viewMis.classList.add('active');
+        viewNueva.classList.remove('active');
+      }
+    }
+
+    // Load reservations from localStorage
+    function loadReservations() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        reservations = stored ? JSON.parse(stored) : [];
+      } catch (e) {
+        console.error('Error al cargar LocalStorage', e);
+        reservations = [];
+      }
+      updateBadge();
+    }
+
+    // Save reservations to localStorage
+    function saveReservations() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+      } catch (e) {
+        console.error('Error al guardar en LocalStorage', e);
+      }
+      updateBadge();
+    }
+
+    // Update reservation counter badge in tab
+    function updateBadge() {
+      document.getElementById('badge-count').textContent = reservations.length;
+    }
+
+    // Handle Form Submit
+    function handleReservationSubmit(event) {
+      event.preventDefault();
+
+      const aula = document.getElementById('aula').value;
+      const fecha = document.getElementById('fecha').value;
+      const horaInicio = document.getElementById('hora-inicio').value;
+      const horaFin = document.getElementById('hora-fin').value;
+      const profesor = document.getElementById('profesor').value.trim();
+
+      // Validation 1: End time must be after start time
+      if (horaFin <= horaInicio) {
+        showToast('La hora de fin debe ser posterior a la hora de inicio.', 'error');
+        return;
+      }
+
+      // Validation 2: Check for schedule overlap on the same room and date
+      const hasConflict = checkOverlap(aula, fecha, horaInicio, horaFin);
+      if (hasConflict) {
+        showToast(`¡Conflicto! El aula "${aula}" ya está reservada en ese horario.`, 'error');
+        return;
+      }
+
+      // Create new reservation object
+      const newReservation = {
+        id: Date.now().toString(),
+        aula,
+        fecha,
+        horaInicio,
+        horaFin,
+        profesor,
+        createdAt: new Date().toISOString()
+      };
+
+      // Add to array and save
+      reservations.unshift(newReservation);
+      saveReservations();
+      renderReservations();
+
+      // Reset form and show success message
+      document.getElementById('reservation-form').reset();
+      showToast('¡Reserva creada exitosamente!', 'success');
+
+      // Switch tab to "Mis reservas"
+      setTimeout(() => {
+        switchTab('mis');
+      }, 500);
+    }
+
+    // Helper: Check time overlap
+    function checkOverlap(aula, fecha, inicio, fin) {
+      return reservations.some(res => {
+        if (res.aula === aula && res.fecha === fecha) {
+          // Time overlap logic: (StartA < EndB) and (EndA > StartB)
+          return (inicio < res.horaFin) && (fin > res.horaInicio);
+        }
+        return false;
+      });
+    }
+
+    // Render list of reservations
+    function renderReservations() {
+      const container = document.getElementById('reservations-list');
+      const emptyState = document.getElementById('empty-state');
+
+      if (reservations.length === 0) {
+        container.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      
+      container.innerHTML = reservations.map(res => {
+        // Format date to locale string
+        const dateParts = res.fecha.split('-');
+        const formattedDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]).toLocaleDateString('es-ES', {
+          weekday: 'short',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+
+        return `
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 p-5 flex flex-col justify-between">
+            <div>
+              <!-- Header Card Info -->
+              <div class="flex items-start justify-between gap-2 mb-3">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  Confirmada
+                </span>
+                <span class="text-xs text-slate-400 font-mono">ID: #${res.id.slice(-4)}</span>
+              </div>
+
+              <!-- Title / Room -->
+              <h3 class="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+                <i class="fa-solid fa-door-open text-brand-600"></i>
+                ${escapeHtml(res.aula)}
+              </h3>
+              
+              <p class="text-sm font-medium text-slate-600 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-user-graduate text-slate-400"></i>
+                ${escapeHtml(res.profesor)}
+              </p>
+
+              <!-- Schedule Box -->
+              <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-2 text-sm text-slate-700 mb-4">
+                <div class="flex items-center gap-2">
+                  <i class="fa-regular fa-calendar text-brand-600 w-4"></i>
+                  <span class="capitalize">${formattedDate}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <i class="fa-regular fa-clock text-brand-600 w-4"></i>
+                  <span class="font-semibold">${res.horaInicio} hrs — ${res.horaFin} hrs</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer Action -->
+            <button onclick="deleteReservation('${res.id}')" class="w-full mt-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold py-2 px-4 rounded-xl text-sm transition duration-150 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-trash-can text-xs"></i>
+              Cancelar Reserva
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Delete single reservation
+    function deleteReservation(id) {
+      reservations = reservations.filter(r => r.id !== id);
+      saveReservations();
+      renderReservations();
+      showToast('Reserva cancelada correctamente', 'info');
+    }
+
+    // Clear all reservations with basic confirmation
+    function clearAllReservations() {
+      if (reservations.length === 0) return;
+      
+      reservations = [];
+      saveReservations();
+      renderReservations();
+      showToast('Se han eliminado todas las reservas', 'info');
+    }
+
+    // Custom Toast Notification System
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      let bgClass = 'bg-slate-900 text-white';
+      let icon = 'fa-circle-info';
+
+      if (type === 'success') {
+        bgClass = 'bg-emerald-600 text-white';
+        icon = 'fa-circle-check';
+      } else if (type === 'error') {
+        bgClass = 'bg-rose-600 text-white';
+        icon = 'fa-triangle-exclamation';
+      }
+
+      toast.className = `${bgClass} p-4 rounded-xl shadow-xl flex items-center gap-3 text-sm font-medium transform transition-all duration-300 translate-y-2 opacity-0`;
+      toast.innerHTML = `
+        <i class="fa-solid ${icon} text-lg"></i>
+        <span class="flex-1">${message}</span>
+      `;
+
+      container.appendChild(toast);
+
+      // Trigger animation
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 10);
+
+      // Auto dismiss after 3.5 seconds
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // Utility: HTML Escaping for security
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, function(m) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        }[m];
+      });
+    }
+  </script>
+</body>
+</html>
